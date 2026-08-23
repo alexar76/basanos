@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>BASANOS — assurance console</title>
+<meta name="description" content="Lydian touchstone for ecosystem Solidity. Signed Assurance Pack at a pinned commit." />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<script type="importmap">
+{"imports":{
+  "three":"https://cdn.jsdelivr.net/npm/three@0.185.0/build/three.module.js",
+  "three/addons/":"https://cdn.jsdelivr.net/npm/three@0.185.0/examples/jsm/"
+}}
+</script>
+<style>
+  :root {
+    --void: #0b0a08;
+    --ink: #f3efe6;
+    --muted: #b8a898;
+    --stone: #c9b496;
+    --gold: #e8c36a;
+    --fail: #e74c3c;
+    --pass: #43e65a;
+    --rev: #ffcc33;
+    --panel: rgba(18, 14, 10, .78);
+    --brd: rgba(201, 180, 150, .18);
+    --head: "Syne", system-ui, sans-serif;
+    --body: "IBM Plex Sans", system-ui, sans-serif;
+    --mono: "IBM Plex Mono", ui-monospace, monospace;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; color: var(--ink); font: 15px/1.5 var(--body);
+    background:
+      radial-gradient(50vw 38vw at 82% 0%, rgba(232, 195, 106, .14), transparent 55%),
+      linear-gradient(165deg, #080705, #120e0a 55%, #0b0a08);
+  }
+  main { max-width: 1080px; margin: 0 auto; padding: 22px 18px 72px; }
+  .hero { display: grid; grid-template-columns: minmax(0, 1fr) minmax(260px, 340px); gap: 22px; align-items: stretch; margin-bottom: 8px; }
+  header h1 { font-family: var(--head); letter-spacing: .16em; font-size: 1.45rem; color: var(--gold); margin: 0 0 8px; }
+  header p { color: var(--muted); margin: 0; max-width: 38rem; }
+  .stage { position: relative; height: 260px; isolation: isolate; border: 1px solid rgba(201,164,106,.18);
+    border-radius: 16px; overflow: hidden;
+    background: radial-gradient(120% 90% at 50% 8%, rgba(22,17,12,.75), rgba(5,4,3,.94));
+    box-shadow: inset 0 0 50px rgba(232,195,106,.04); }
+  #stone { position: absolute; inset: 0; display: block; width: 100%; height: 100%; cursor: grab; touch-action: none; }
+  .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin: 16px 0 18px; }
+  button, select { background: #16110c; color: var(--ink); border: 1px solid var(--brd); border-radius: 10px; padding: 8px 12px; font: inherit; }
+  button.primary { background: linear-gradient(135deg, #f0d48a, #c9a046); border-color: transparent; color: #1a1408; font-weight: 700; }
+  button:disabled { opacity: .5; }
+  label.toggle { display: flex; gap: 8px; align-items: center; color: var(--muted); font-size: 13px; }
+  .meta { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; margin-bottom: 16px; }
+  .chip { border: 1px solid var(--brd); border-radius: 12px; padding: 10px 12px; background: var(--panel); }
+  .chip b { display: block; color: var(--muted); font-size: 11px; letter-spacing: .12em; text-transform: uppercase; }
+  .badge { font: 700 18px var(--mono); letter-spacing: .14em; margin: 0 0 12px; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { text-align: left; padding: 8px 6px; border-bottom: 1px solid var(--brd); vertical-align: top; }
+  th { color: var(--muted); font-weight: 600; }
+  pre { background: var(--panel); border: 1px solid var(--brd); border-radius: 12px; padding: 14px; overflow: auto; font: 12px/1.45 var(--mono); }
+  .limits { color: var(--muted); font-size: 13px; }
+  .playbook { border: 1px solid var(--brd); border-radius: 12px; padding: 12px 16px; background: var(--panel); margin: 12px 0 18px; }
+  .playbook h2 { margin: 0 0 8px; font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+  .playbook p { margin: 0 0 8px; color: var(--stone); }
+  .playbook ol { margin: 0; padding-left: 1.2rem; }
+  .playbook li { margin: 4px 0; }
+  @media (max-width: 720px) { .hero { grid-template-columns: 1fr; } .stage { height: 220px; } }
+</style>
+</head>
+<body>
+<main>
+  <div class="hero">
+    <header>
+      <h1>BASANOS</h1>
+      <p>Scratch the alloy. A signed Assurance Pack at a pinned commit — PASS, REVIEW, or FAIL.</p>
+    </header>
+    <div class="stage">
+      <canvas id="stone" aria-label="Interactive 3D Lydian touchstone"></canvas>
+    </div>
+  </div>
+  <div class="row">
+    <select id="roots" aria-label="Contract root">
+      <option value="sound">sound fixtures</option>
+      <option value="fixtures">all fixtures</option>
+      <option value="acex">acex</option>
+      <option value="lottery">lottery</option>
+      <option value="core">core</option>
+      <option value="zk">zk</option>
+    </select>
+    <label class="toggle"><input id="intel" type="checkbox" /> ingest intel (allowlist only)</label>
+    <button class="primary" id="run" type="button">Scan</button>
+    <button id="healthBtn" type="button">Health</button>
+  </div>
+  <p class="badge" id="verdict">IDLE</p>
+  <div class="meta" id="meta"></div>
+  <div class="playbook" id="playbook" hidden></div>
+  <div id="findings"></div>
+  <p class="limits" id="limits"></p>
+  <pre id="out">idle — pick a root and scan. Memos steer detector order.</pre>
+</main>
+<script type="module">
+import { mountTouchstone } from "/stone.js";
+
+const touchstone = mountTouchstone(document.getElementById("stone"), {
+  compact: true,
+  freezeVerdict: true,
+});
+
+const out = document.getElementById("out");
+const verdict = document.getElementById("verdict");
+const meta = document.getElementById("meta");
+const findingsEl = document.getElementById("findings");
+const limitsEl = document.getElementById("limits");
+const playbook = document.getElementById("playbook");
+
+function colorFor(v) {
+  if (v === "PASS") return "var(--pass)";
+  if (v === "FAIL") return "var(--fail)";
+  if (v === "REVIEW") return "var(--rev)";
+  return "var(--muted)";
+}
+function tintStone(v) {
+  if (v) touchstone.setVerdict(v);
+}
+function chip(label, value) {
+  return `<div class="chip"><b>${label}</b>${value || "—"}</div>`;
+}
+async function postInvoke(roots, ingest) {
+  const body = {
+    product_id: "basanos",
+    capability_id: "agent.security.contract-assurance@v1",
+    input: { roots, ingest_intel: ingest }
+  };
+  const res = await fetch("/invoke", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(body)
+  });
+  const data = await res.json();
+  return { res, pack: data.result || data };
+}
+
+document.getElementById("run").onclick = async () => {
+  const roots = [document.getElementById("roots").value];
+  const ingest = document.getElementById("intel").checked;
+  out.textContent = "scanning…";
+  findingsEl.innerHTML = "";
+  playbook.hidden = true;
+  playbook.innerHTML = "";
+  try {
+    const { res, pack } = await postInvoke(roots, ingest);
+    verdict.textContent = pack.verdict || res.status;
+    verdict.style.color = colorFor(pack.verdict);
+    tintStone(pack.verdict);
+    const commit = (pack.commit && pack.commit.sha) || "";
+    const digest = (pack.commit && pack.commit.tree_digest) || "";
+    meta.innerHTML =
+      chip("files", pack.subject && pack.subject.file_count) +
+      chip("commit", commit ? commit.slice(0, 12) : "unpinned") +
+      chip("tree", digest ? digest.slice(0, 16) : "—") +
+      chip("pack", (pack.basanos_report_digest || "").slice(0, 16));
+    const handling = pack.handling || {};
+    const actions = handling.operator_actions || [];
+    if (actions.length) {
+      playbook.hidden = false;
+      playbook.innerHTML =
+        `<h2>Operator playbook · ISO/IEC 29147 / 30111</h2>` +
+        `<p>${handling.summary || ""}</p>` +
+        `<ol>${actions.map((step) => `<li>${step}</li>`).join("")}</ol>`;
+    }
+    const findings = pack.findings || [];
+    if (findings.length) {
+      findingsEl.innerHTML = `<table><thead><tr><th>id</th><th>sev</th><th>CWE</th><th>path</th><th>title</th></tr></thead><tbody>${
+        findings.map((f) => `<tr><td>${f.detector_id || ""}</td><td>${f.severity || ""}</td><td>${f.cwe || f.swc || ""}</td><td>${f.path || ""}:${f.line || 0}</td><td>${f.title || ""}</td></tr>`).join("")
+      }</tbody></table>`;
+    }
+    const lim = pack.limits || {};
+    limitsEl.textContent = (lim.in_scope || []).slice(0, 2).join(" · ");
+    out.textContent = JSON.stringify(pack, null, 2);
+  } catch (err) {
+    verdict.textContent = "ERROR";
+    verdict.style.color = "var(--fail)";
+    out.textContent = String(err);
+  }
+};
+
+document.getElementById("healthBtn").onclick = async () => {
+  const health = await (await fetch("/health")).json();
+  const intel = await (await fetch("/intel")).json();
+  const memos = await (await fetch("/memos")).json();
+  verdict.textContent = health.ok ? "LIVE" : "DOWN";
+  verdict.style.color = health.ok ? "var(--pass)" : "var(--fail)";
+  playbook.hidden = true;
+  out.textContent = JSON.stringify({ health, intel, memos }, null, 2);
+};
+</script>
+</body>
+</html>

@@ -1,0 +1,62 @@
+{
+  "product_id": "basanos",
+  "capability_id": "agent.security.contract-assurance@v1",
+  "name": "BASANOS",
+  "description": "Signed Solidity assurance packs for AICOM ecosystem contracts. Technical layer only — not AgentAuditPool insurance, not MOMUS runtime probes, not THEMIS admission.",
+  "invoke_url": "http://127.0.0.1:9470/invoke",
+  "publisher_id": "community",
+  "provider_pubkey": "U2Ni81NLViod8GjRSLfm2K6t3vMoYa0NBEJVojjgHy4=",
+  "price_per_call_usd": 0.02,
+  "input_schema": {
+    "type": "object",
+    "properties": {
+      "roots": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        },
+        "maxItems": 8
+      },
+      "ingest_intel": {
+        "type": "boolean"
+      }
+    },
+    "additionalProperties": false
+  },
+  "output_schema": {
+    "type": "object",
+    "required": [
+      "verdict",
+      "commit",
+      "findings",
+      "handling",
+      "limits",
+      "basanos_report_digest"
+    ],
+    "properties": {
+      "verdict": {
+        "enum": [
+          "PASS",
+          "REVIEW",
+          "FAIL"
+        ]
+      },
+      "commit": {
+        "type": "object"
+      },
+      "findings": {
+        "type": "array"
+      },
+      "handling": {
+        "type": "object"
+      },
+      "limits": {
+        "type": "object"
+      },
+      "basanos_report_digest": {
+        "type": "string"
+      }
+    },
+    "additionalProperties": true
+  }
+}

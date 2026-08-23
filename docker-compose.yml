@@ -1,0 +1,43 @@
+# BASANOS — Solidity assurance satellite. Prod home: the ORACLE host, published
+# on basanos.modelmarket.dev through the nginx TLS edge.
+#
+# All containers bind LOOPBACK only — never 0.0.0.0. nginx is the only edge.
+#
+# Build from the satellite directory (or via -f from the monorepo root):
+#     docker compose -f basanos/docker-compose.yml up -d --build
+#
+# The scanner reads ACEX / lottery / core sources from BASANOS_CONTRACT_ROOT
+# (the monorepo), mounted read-only. It never compiles, never executes bytecode,
+# and never fetches URLs found in Solidity.
+services:
+  basanos:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      HOST: "0.0.0.0"
+      PORT: "9470"
+      AIFACTORY_PROD: ${AIFACTORY_PROD:-1}
+      BASANOS_THREAT_INTEL: ${BASANOS_THREAT_INTEL:-0}
+      BASANOS_THREAT_INTEL_PROD: ${BASANOS_THREAT_INTEL_PROD:-0}
+      BASANOS_INTEL_GITHUB_REPOS: ${BASANOS_INTEL_GITHUB_REPOS:-}
+      GITHUB_TOKEN: ${GITHUB_TOKEN:-}
+      AIMARKET_PROVIDER_IDENTITY_FILE: /data/provider.key
+      BASANOS_DATA_DIR: /data
+      BASANOS_CONTRACT_ROOT: /contracts
+    volumes:
+      - basanos-keys:/data
+      - ${BASANOS_CONTRACT_ROOT:-..}:/contracts:ro
+    ports:
+      - "127.0.0.1:9470:9470"
+    restart: unless-stopped
+    networks:
+      - default
+      - ecosystem
+
+volumes:
+  basanos-keys:
+
+networks:
+  ecosystem:
+    external: true
