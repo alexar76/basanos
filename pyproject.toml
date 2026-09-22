@@ -1,0 +1,98 @@
+[project]
+name = "aimarket-basanos"
+version = "0.1.0"
+description = "BASANOS — signed Solidity assurance packs for AICOM ecosystem contracts. Technical layer, not AgentAuditPool insurance."
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+# NOT PUBLISHABLE, enforced: PyPI rejects any upload carrying this classifier. Same reasoning as
+# themis/pyproject.toml, and the same evidence — the README installs with `uv sync`, the
+# Dockerfile starts it with `python agent.py`, and no publish script references it.
+#
+# The specific hazard is the `only-include` list below: alongside the `basanos` package it ships
+# `agent.py`, `configure_provider.py` and `validate_manifest.py`, so a wheel install puts
+# `agent`, `configure_provider` and `validate_manifest` in site-packages as bare top-level
+# modules, where `agent` in particular collides with anything else shipping a module of that
+# name. Of the 23 packages in this repo that depend on aimarket-oracle-core, only this one and
+# themis do that; the other 21 ship a package directory and nothing loose.
+#
+# If BASANOS ever needs to be a real library, the fix is narrower than themis': it already HAS
+# a package, so drop the three loose `.py` entries from the wheel target (keeping them in the
+# sdist, which is what makes the clone-and-run archive complete) and remove this classifier.
+classifiers = ["Private :: Do Not Upload"]
+dependencies = [
+    # The federation manifest must be signed over the HUB's canonical form. oracle_core owns
+    # that formula (and the scar tissue: when the hub grew a fifth field, every oracle
+    # manifest failed verification and none could federate). Depending on the published
+    # 0.3.0 — byte-identical to the monorepo copy — beats a third hand-written copy.
+    # [pqc] is what makes the manifest signature HYBRID. Without dilithium-py the signer
+    # degrades to Ed25519 alone and says nothing about it, so this node kept publishing a
+    # classical-only manifest through phase 2 of the PQC migration. A peer that had reached
+    # phase 3 (AIMARKET_PQC_REQUIRE=1) then refused every manifest from here and silently
+    # froze its copy of this catalogue — measured on hub.attestedmemory.net, which served a
+    # week-old index of this node while reporting the peer as active and freshly crawled.
+    "aimarket-oracle-core[pqc]>=0.3",
+    "cryptography>=44",
+    "fastapi>=0.115",
+    "httpx>=0.27",
+    "pydantic>=2.10",
+    "uvicorn>=0.34",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8",
+    "pytest-asyncio>=0.24",
+    "pytest-cov>=5",
+    "ruff>=0.12,<1",
+]
+
+[project.urls]
+Documentation = "https://github.com/alexar76/basanos#readme"
+Issues = "https://github.com/alexar76/basanos/issues"
+Repository = "https://github.com/alexar76/basanos"
+
+[tool.hatch.build.targets.wheel]
+packages = ["basanos"]
+only-include = [
+    "basanos",
+    "agent.py",
+    "configure_provider.py",
+    "validate_manifest.py",
+]
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "/basanos",
+    "/agent.py",
+    "/configure_provider.py",
+    "/validate_manifest.py",
+    "/capability.json",
+    "/frontend",
+    "/tests",
+    "/docs",
+    "/README.md",
+    "/SECURITY.md",
+    "/LICENSE",
+    "/Dockerfile",
+    "/.dockerignore",
+    "/.env.example",
+    "/pyproject.toml",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+asyncio_default_fixture_loop_scope = "function"
+addopts = "--cov=basanos --cov=agent --cov=configure_provider --cov=validate_manifest --cov-branch --cov-report=term-missing --cov-fail-under=90"
+
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F", "I"]
