@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>BASANOS — scrape the alloy</title>
+<meta name="description" content="Lydian touchstone for ecosystem Solidity. Signed Assurance Pack at a pinned commit — PASS, REVIEW, or FAIL." />
+<link rel="canonical" href="https://basanos.modelmarket.dev/" />
+<meta property="og:title" content="BASANOS — Lydian touchstone" />
+<meta property="og:description" content="Signed Solidity Assurance Pack at a pinned commit." />
+<meta property="og:url" content="https://basanos.modelmarket.dev/" />
+<meta name="theme-color" content="#0b0a08" />
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
+<link href="fonts/fonts.css" rel="stylesheet" />
+<script type="importmap">
+{"imports":{
+  "three":"https://cdn.jsdelivr.net/npm/three@0.185.0/build/three.module.js",
+  "three/addons/":"https://cdn.jsdelivr.net/npm/three@0.185.0/examples/jsm/"
+}}
+</script>
+<style>
+  :root {
+    --void: #0b0a08;
+    --ink: #f3efe6;
+    --muted: #b8a898;
+    --stone: #c9b496;
+    --gold: #e8c36a;
+    --pass: #43e65a;
+    --review: #ffcc33;
+    --fail: #e74c3c;
+    --brd: rgba(201, 180, 150, .18);
+    --head: "Syne", system-ui, sans-serif;
+    --body: "IBM Plex Sans", system-ui, sans-serif;
+    --mono: "IBM Plex Mono", ui-monospace, monospace;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; min-height: 100%; background: var(--void); color: var(--ink); font-family: var(--body); }
+  body {
+    background:
+      radial-gradient(55vw 42vw at 78% 8%, rgba(232, 195, 106, .16), transparent 58%),
+      radial-gradient(40vw 32vw at 8% 88%, rgba(67, 230, 90, .06), transparent 50%),
+      linear-gradient(165deg, #080705, #120e0a 55%, #0b0a08);
+  }
+  .nebula { position: fixed; inset: 0; pointer-events: none; z-index: 0;
+    background: radial-gradient(ellipse at 50% 40%, transparent 40%, rgba(11,10,8,.72) 100%); }
+  .wrap { position: relative; z-index: 2; max-width: 1120px; margin: 0 auto; padding: 0 22px 72px; }
+  nav { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap;
+    padding: 22px 0; }
+  .brand { font-family: var(--head); letter-spacing: .2em; font-weight: 800; text-decoration: none; color: var(--ink); }
+  .links a { color: var(--muted); text-decoration: none; margin-left: 14px; font-size: 13px; }
+  .links a:hover { color: var(--gold); }
+  .hero { display: grid; grid-template-columns: minmax(0, .9fr) minmax(420px, 1.1fr);
+    gap: clamp(20px, 4vw, 40px); align-items: center; padding: 48px 0 56px; min-height: 560px; }
+  .kicker { font: 600 11px/1 var(--body); letter-spacing: .22em; text-transform: uppercase; color: var(--gold); margin: 0 0 16px; }
+  h1 { font-family: var(--head); font-size: clamp(2.4rem, 6.4vw, 4.2rem); line-height: .96;
+    margin: 0 0 18px; letter-spacing: -.02em; }
+  h1 em { font-style: normal; color: var(--gold); }
+  .lead { max-width: 38rem; color: var(--muted); font-size: 1.12rem; margin: 0 0 28px; }
+  .cta { display: flex; flex-wrap: wrap; gap: 12px; }
+  .btn { display: inline-flex; align-items: center; justify-content: center; padding: 12px 18px;
+    border-radius: 999px; text-decoration: none; font-weight: 700; font-family: var(--head); letter-spacing: .04em; }
+  .btn-primary { background: linear-gradient(135deg, #f0d48a, #c9a046); color: #1a1408; }
+  .btn-ghost { border: 1px solid var(--brd); color: var(--ink); }
+  .stage { position: relative; height: 560px; min-width: 0; isolation: isolate; cursor: grab; touch-action: pan-y; }
+  .stage:active { cursor: grabbing; }
+  .stage:after { content: ""; position: absolute; inset: 12%; z-index: -1; pointer-events: none;
+    background: radial-gradient(circle, rgba(232,195,106,.16), rgba(67,230,90,.04) 42%, transparent 68%);
+    filter: blur(22px); }
+  #stone { position: absolute; inset: 0; width: 100%; height: 100%; display: block; outline: none; }
+  .scene-label { position: absolute; z-index: 2; padding: 7px 10px; border: 1px solid rgba(201,164,106,.18);
+    border-radius: 6px; background: rgba(11,10,8,.62); backdrop-filter: blur(8px);
+    font: 600 9px/1.35 var(--mono); letter-spacing: .12em; color: rgba(184,168,152,.45);
+    pointer-events: none; transition: border-color .4s, color .4s, opacity .4s; opacity: .55; }
+  .scene-label b { display: block; font-size: 11px; margin-bottom: 2px; opacity: .55; transition: opacity .4s; }
+  /* Only the verdict the stone is currently showing lights up: three labels shouting at once
+     read as three verdicts, when a pack only ever carries one. */
+  .scene-label[data-on="1"] { opacity: 1; color: var(--ink); border-color: rgba(201,164,106,.42); }
+  .scene-label[data-on="1"] b { opacity: 1; }
+  .scene-label.pass { top: 16%; right: 2%; } .scene-label.pass b { color: var(--pass); }
+  .scene-label.review { bottom: 18%; left: 0; } .scene-label.review b { color: var(--review); }
+  .scene-label.fail { bottom: 10%; right: 6%; } .scene-label.fail b { color: var(--fail); }
+  .readout { position: absolute; left: 50%; top: 3%; transform: translateX(-50%); z-index: 2;
+    text-align: center; pointer-events: none; white-space: nowrap; }
+  .readout b { display: block; font: 700 15px/1 var(--mono); letter-spacing: .22em; color: var(--pass);
+    transition: color .35s; }
+  .readout span { display: block; margin-top: 5px; font: 500 10px/1.3 var(--mono); color: var(--muted); }
+  /* The stone's outer rings sweep across the bottom of the stage, so the hint needs its own
+     ground to stay legible rather than relying on the void behind it. */
+  .hint { position: absolute; left: 50%; bottom: 3%; transform: translateX(-50%); z-index: 2;
+    padding: 5px 12px; border: 1px solid rgba(201,164,106,.16); border-radius: 999px;
+    background: rgba(11,10,8,.66); backdrop-filter: blur(8px);
+    font: 500 9px/1 var(--mono); letter-spacing: .16em; color: rgba(184,168,152,.72);
+    white-space: nowrap; pointer-events: none; text-transform: uppercase; }
+  .grid { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); margin-top: 48px; }
+  .card { position: relative; overflow: hidden; border: 1px solid var(--brd); border-radius: 16px;
+    padding: 18px 18px 18px 20px; background: rgba(255,255,255,.03); transition: border-color .2s; }
+  .card::before { content: ""; position: absolute; inset: 0 auto 0 0; width: 2px;
+    background: var(--brd); transition: background .2s; }
+  .card:hover { border-color: rgba(232,195,106,.32); }
+  .card:hover::before { background: var(--gold); }
+  .card h2 { font-family: var(--head); font-size: 1.05rem; margin: 0 0 8px; }
+  .card p { margin: 0; color: var(--muted); font-size: .95rem; }
+  .card .tag { display: block; margin-bottom: 8px; font: 600 9px/1 var(--mono); letter-spacing: .18em;
+    text-transform: uppercase; color: var(--gold); opacity: .75; }
+  .pips { display: flex; gap: 10px; margin-top: 22px; font: 600 11px/1 var(--body); letter-spacing: .12em; }
+  .pips span { display: inline-flex; align-items: center; gap: 6px; color: rgba(184,168,152,.45);
+    padding: 6px 10px; border: 1px solid transparent; border-radius: 999px; transition: .35s; }
+  .pips span[data-on="1"] { color: var(--ink); border-color: var(--brd); background: rgba(255,255,255,.04); }
+  /* The dot keeps its verdict colour through --pip; only the label text dims and brightens. */
+  .pips i { width: 8px; height: 8px; border-radius: 50%; display: block; background: var(--pip);
+    opacity: .4; transition: opacity .35s, box-shadow .35s; }
+  .pips span[data-on="1"] i { opacity: 1; box-shadow: 0 0 10px var(--pip); }
+  .siblings { margin-top: 40px; padding-top: 22px; border-top: 1px solid var(--brd);
+    display: flex; flex-wrap: wrap; gap: 10px 22px; align-items: baseline;
+    font: 500 12px/1.5 var(--mono); color: var(--muted); }
+  .siblings b { color: var(--gold); font-weight: 600; letter-spacing: .12em; }
+  .siblings a { color: var(--ink); text-decoration: none; border-bottom: 1px solid var(--brd); }
+  .siblings a:hover { border-color: var(--gold); }
+  footer { margin-top: 56px; color: var(--muted); font-size: 13px; }
+  footer a { color: var(--gold); }
+  @media (max-width: 900px) {
+    .hero { grid-template-columns: 1fr; min-height: 0; padding-top: 28px; }
+    .stage { height: min(520px, 78vw); min-height: 360px; order: -1; margin-bottom: -12px; }
+    .scene-label { display: none; }
+  }
+  @media (max-width: 600px) {
+    .stage { height: 420px; margin: 0 -8px 12px; }
+    .hint { bottom: 6%; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .btn-primary { box-shadow: none; }
+    .hint { display: none; }
+  }
+</style>
+</head>
+<body>
+  <div class="nebula" aria-hidden="true"></div>
+  <div class="wrap">
+    <nav>
+      <a class="brand" href="https://basanos.modelmarket.dev/">BASANOS</a>
+      <div class="links">
+        <a href="https://basanos.modelmarket.dev/ui/">Console</a>
+        <a href="https://github.com/alexar76/basanos">Source</a>
+        <a href="https://monitor.modelmarket.dev/">Ecosystem</a>
+      </div>
+    </nav>
+    <section class="hero">
+      <div>
+        <p class="kicker">βάσανος · Lydian touchstone</p>
+        <h1>Scratch it.<br>Pin it.<br><em>Sign it.</em></h1>
+        <p class="lead">
+          A signed <strong>Assurance Pack</strong> for ecosystem Solidity at a pinned commit.
+          Detectors scrape the alloy. The pack records PASS, REVIEW, or FAIL — with an operator
+          playbook when the stone streaks red.
+        </p>
+        <div class="cta">
+          <a class="btn btn-primary" href="https://basanos.modelmarket.dev/ui/">Open the console</a>
+          <a class="btn btn-ghost" href="https://github.com/alexar76/basanos">GitHub</a>
+        </div>
+        <div class="pips" id="pips" aria-hidden="true">
+          <span data-verdict="PASS" style="--pip:var(--pass)"><i></i> PASS</span>
+          <span data-verdict="REVIEW" style="--pip:var(--review)"><i></i> REVIEW</span>
+          <span data-verdict="FAIL" style="--pip:var(--fail)"><i></i> FAIL</span>
+        </div>
+      </div>
+      <div class="stage" id="stage">
+        <canvas id="stone" aria-label="Interactive 3D Lydian touchstone"></canvas>
+        <div class="readout" aria-hidden="true"><b id="readoutVerdict">PASS</b><span id="readoutPhase">alloy holds</span></div>
+        <div class="scene-label pass" data-verdict="PASS"><b>PASS</b>alloy holds</div>
+        <div class="scene-label review" data-verdict="REVIEW"><b>REVIEW</b>human call</div>
+        <div class="scene-label fail" data-verdict="FAIL"><b>FAIL</b>contain digest</div>
+        <p class="hint">drag to orbit · scroll to zoom</p>
+      </div>
+    </section>
+    <div class="grid">
+      <article class="card">
+        <span class="tag">Provenance</span>
+        <h2>Pin the tree</h2>
+        <p>Every pack binds commit SHA and a tree digest. The signature is worthless without that pin.</p>
+      </article>
+      <article class="card">
+        <span class="tag">Scope</span>
+        <h2>Closed detectors</h2>
+        <p>Intel and memos may reorder the set. They cannot add a detector or mint an insurance score.</p>
+      </article>
+      <article class="card">
+        <span class="tag">Handling</span>
+        <h2>Operator playbook</h2>
+        <p>FAIL and REVIEW ship ISO/IEC 29147 / 30111 next steps. Coverage stays a human call on AgentAuditPool.</p>
+      </article>
+    </div>
+    <div class="siblings">
+      <b>SIBLING LAYERS</b>
+      <span>BASANOS reads the source. <a href="https://alexar76.github.io/dolos/">DOLOS</a>
+        attacks the deployed contract on a throwaway fork and confirms or refutes what this stone
+        flagged. <a href="https://github.com/alexar76/momus">MOMUS</a> does the same for HTTP and
+        federation.</span>
+    </div>
+
+    <footer>
+      Live <a href="https://basanos.modelmarket.dev/">basanos.modelmarket.dev</a> ·
+      Pages <a href="https://alexar76.github.io/basanos/">github.io/basanos</a> ·
+      <code>agent.security.contract-assurance@v1</code>
+    </footer>
+  </div>
+  <script type="module">
+    import { mountTouchstone } from "./stone.js";
+
+    const marks = document.querySelectorAll("[data-verdict]");
+    function highlight(id) {
+      marks.forEach((el) => {
+        el.dataset.on = el.dataset.verdict === id ? "1" : "0";
+      });
+    }
+
+    try {
+      mountTouchstone(document.getElementById("stone"), {
+        hud: {
+          verdict: document.getElementById("readoutVerdict"),
+          phase: document.getElementById("readoutPhase"),
+        },
+        onVerdict: highlight,
+      });
+    } catch (err) {
+      console.warn("[basanos-stone]", err);
+      document.getElementById("stage")?.classList.add("failed");
+    }
+  </script>
+</body>
+</html>

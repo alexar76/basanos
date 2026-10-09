@@ -1,0 +1,10 @@
+.venv
+.aimarket
+data
+__pycache__
+.pytest_cache
+.coverage
+.ruff_cache
+dist
+*.pyc
+.DS_Store

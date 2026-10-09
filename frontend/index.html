@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>BASANOS — assurance console</title>
+<meta name="description" content="Lydian touchstone for ecosystem Solidity. Signed Assurance Pack at a pinned commit." />
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
+<link href="fonts/fonts.css" rel="stylesheet" />
+<script type="importmap">
+{"imports":{
+  "three":"https://cdn.jsdelivr.net/npm/three@0.185.0/build/three.module.js",
+  "three/addons/":"https://cdn.jsdelivr.net/npm/three@0.185.0/examples/jsm/"
+}}
+</script>
+<style>
+  :root {
+    --void: #0b0a08;
+    --ink: #f3efe6;
+    --muted: #b8a898;
+    --stone: #c9b496;
+    --gold: #e8c36a;
+    --fail: #e74c3c;
+    --pass: #43e65a;
+    --rev: #ffcc33;
+    --info: #8ab4ff;
+    --panel: rgba(18, 14, 10, .78);
+    --brd: rgba(201, 180, 150, .18);
+    --head: "Syne", system-ui, sans-serif;
+    --body: "IBM Plex Sans", system-ui, sans-serif;
+    --mono: "IBM Plex Mono", ui-monospace, monospace;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; color: var(--ink); font: 15px/1.55 var(--body);
+    background:
+      radial-gradient(52vw 40vw at 84% -4%, rgba(232, 195, 106, .15), transparent 56%),
+      radial-gradient(40vw 30vw at 2% 96%, rgba(67, 230, 90, .05), transparent 52%),
+      linear-gradient(165deg, #080705, #120e0a 55%, #0b0a08);
+    min-height: 100vh;
+  }
+  main { max-width: 1080px; margin: 0 auto; padding: 24px 18px 72px; }
+  a { color: var(--gold); }
+
+  /* ── hero ───────────────────────────────────────────────────────────────── */
+  .hero { display: grid; grid-template-columns: minmax(0, 1fr) minmax(280px, 380px);
+    gap: 24px; align-items: stretch; margin-bottom: 20px; }
+  /* A flex column so the boundary line settles against the bottom of the stage rather than
+     leaving a hole in the middle of the panel. */
+  header { display: flex; flex-direction: column; }
+  header h1 { font-family: var(--head); letter-spacing: .18em; font-size: 1.5rem;
+    color: var(--gold); margin: 0 0 10px; }
+  header p { color: var(--muted); margin: 0 0 14px; max-width: 38rem; }
+  .role { display: inline-flex; align-items: center; gap: 8px; padding: 5px 11px;
+    border: 1px solid var(--brd); border-radius: 999px;
+    font: 500 11px/1 var(--mono); letter-spacing: .1em; color: var(--muted); }
+  .role i { width: 7px; height: 7px; border-radius: 50%; background: var(--muted); display: block; }
+  .role[data-live="1"] i { background: var(--pass); box-shadow: 0 0 8px var(--pass); }
+  .role[data-live="0"] i { background: var(--fail); box-shadow: 0 0 8px var(--fail); }
+  .not { margin: 14px 0 0; padding-top: 14px; border-top: 1px solid var(--brd);
+    font: 500 11px/1.6 var(--mono); color: rgba(184,168,152,.62); }
+  @media (min-width: 761px) { .not { margin-top: auto; } }
+  .role { align-self: flex-start; }
+
+  .stage { position: relative; height: 300px; isolation: isolate; border: 1px solid rgba(201,164,106,.18);
+    border-radius: 16px; overflow: hidden;
+    background: radial-gradient(120% 90% at 50% 8%, rgba(22,17,12,.75), rgba(5,4,3,.94));
+    box-shadow: inset 0 0 50px rgba(232,195,106,.04); }
+  #stone { position: absolute; inset: 0; display: block; width: 100%; height: 100%;
+    cursor: grab; touch-action: none; }
+  #stone:active { cursor: grabbing; }
+  .readout { position: absolute; left: 0; right: 0; bottom: 0; z-index: 2; padding: 10px 14px;
+    background: linear-gradient(180deg, transparent, rgba(6,5,4,.86) 55%); pointer-events: none; }
+  .readout b { display: block; font: 700 17px/1 var(--mono); letter-spacing: .2em; color: var(--muted);
+    transition: color .3s; }
+  .readout span { display: block; margin-top: 5px; font: 500 10px/1.35 var(--mono);
+    color: rgba(184,168,152,.72); }
+  /* A scan is the one moment the operator must not read the stone as a verdict. */
+  .stage[data-busy="1"]::after { content: ""; position: absolute; inset: 0; z-index: 3;
+    background: linear-gradient(180deg, transparent, rgba(232,195,106,.1), transparent);
+    background-size: 100% 40%; background-repeat: no-repeat;
+    animation: sweep 1.3s linear infinite; pointer-events: none; }
+  @keyframes sweep { from { background-position: 0 -40%; } to { background-position: 0 140%; } }
+
+  /* ── controls ───────────────────────────────────────────────────────────── */
+  .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin: 4px 0 18px; }
+  button, select { background: #16110c; color: var(--ink); border: 1px solid var(--brd);
+    border-radius: 10px; padding: 9px 13px; font: inherit; font-size: 14px; transition: .15s; }
+  button { cursor: pointer; }
+  button:hover:not(:disabled), select:hover { border-color: rgba(232,195,106,.42); }
+  button.primary { background: linear-gradient(135deg, #f0d48a, #c9a046); border-color: transparent;
+    color: #1a1408; font-weight: 700; }
+  button:disabled { opacity: .5; cursor: progress; }
+  label.toggle { display: flex; gap: 8px; align-items: center; color: var(--muted); font-size: 13px; }
+
+  /* ── verdict + meta ─────────────────────────────────────────────────────── */
+  .verdictbar { display: flex; flex-wrap: wrap; align-items: center; gap: 14px;
+    border: 1px solid var(--brd); border-left-width: 3px; border-radius: 14px;
+    padding: 14px 18px; background: var(--panel); margin-bottom: 14px; }
+  .verdictbar[data-v="PASS"] { border-left-color: var(--pass); }
+  .verdictbar[data-v="FAIL"] { border-left-color: var(--fail); }
+  .verdictbar[data-v="REVIEW"] { border-left-color: var(--rev); }
+  .verdictbar[data-v="ERROR"] { border-left-color: var(--fail); }
+  .badge { font: 700 20px/1 var(--mono); letter-spacing: .16em; color: var(--muted); }
+  .verdictnote { color: var(--muted); font-size: 13px; margin: 0; flex: 1 1 16rem; }
+
+  .meta { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px;
+    margin-bottom: 18px; }
+  .chip { border: 1px solid var(--brd); border-radius: 12px; padding: 10px 12px; background: var(--panel); }
+  .chip b { display: block; color: rgba(184,168,152,.7); font-size: 10px; letter-spacing: .14em;
+    text-transform: uppercase; margin-bottom: 4px; }
+  .chip span { font: 500 13px/1.3 var(--mono); word-break: break-all; }
+
+  /* ── playbook + findings ────────────────────────────────────────────────── */
+  .playbook { border: 1px solid var(--brd); border-left: 3px solid var(--rev); border-radius: 12px;
+    padding: 14px 18px; background: var(--panel); margin: 0 0 18px; }
+  .playbook h2 { margin: 0 0 8px; font-size: 11px; letter-spacing: .14em; text-transform: uppercase;
+    color: var(--muted); }
+  .playbook p { margin: 0 0 8px; color: var(--stone); }
+  .playbook ol { margin: 0; padding-left: 1.2rem; }
+  .playbook li { margin: 5px 0; }
+
+  .findings { border: 1px solid var(--brd); border-radius: 14px; overflow: hidden;
+    background: var(--panel); margin-bottom: 14px; }
+  .findings h2 { margin: 0; padding: 12px 16px; border-bottom: 1px solid var(--brd);
+    font: 600 11px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid rgba(201,180,150,.08);
+    vertical-align: top; }
+  tr:last-child td { border-bottom: none; }
+  th { color: rgba(184,168,152,.7); font: 600 10px/1 var(--mono); letter-spacing: .12em;
+    text-transform: uppercase; }
+  td.mono { font-family: var(--mono); font-size: 12px; color: var(--stone); }
+  .sev { display: inline-block; padding: 2px 8px; border-radius: 999px; border: 1px solid;
+    font: 600 10px/1.5 var(--mono); letter-spacing: .08em; text-transform: uppercase; }
+  .sev.critical, .sev.high { color: var(--fail); border-color: rgba(231,76,60,.4); background: rgba(231,76,60,.1); }
+  .sev.medium { color: var(--rev); border-color: rgba(255,204,51,.35); background: rgba(255,204,51,.08); }
+  .sev.low, .sev.info { color: var(--info); border-color: rgba(138,180,255,.3); background: rgba(138,180,255,.08); }
+
+  details { border: 1px solid var(--brd); border-radius: 12px; background: var(--panel); overflow: hidden; }
+  summary { padding: 11px 16px; cursor: pointer; color: var(--muted);
+    font: 600 11px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; }
+  summary::marker { color: var(--gold); }
+  pre { margin: 0; padding: 14px 16px; border-top: 1px solid var(--brd); overflow: auto;
+    max-height: 60vh; font: 12px/1.5 var(--mono); color: var(--stone); }
+  .limits { color: rgba(184,168,152,.66); font-size: 12px; margin: 12px 0 16px;
+    font-family: var(--mono); }
+
+  @media (max-width: 760px) { .hero { grid-template-columns: 1fr; } .stage { height: 240px; } }
+  @media (prefers-reduced-motion: reduce) { .stage[data-busy="1"]::after { animation: none; } }
+</style>
+</head>
+<body>
+<main>
+  <div class="hero">
+    <header>
+      <h1>BASANOS</h1>
+      <p>Scratch the alloy. A signed <strong>Assurance Pack</strong> at a pinned commit —
+         PASS, REVIEW, or FAIL, with an operator playbook when the stone streaks red.</p>
+      <span class="role" id="role" data-live=""><i></i> <span id="roleText">agent.security.contract-assurance@v1</span></span>
+      <p class="not">Not insurance · not a red team · not Hub admission.
+         Coverage stays a human call.</p>
+    </header>
+    <div class="stage" id="stage" data-busy="0">
+      <canvas id="stone" aria-label="Interactive 3D Lydian touchstone"></canvas>
+      <div class="readout" aria-hidden="true">
+        <b id="readoutVerdict">IDLE</b>
+        <span id="readoutPhase">pick a root and scan · memos steer detector order</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="row">
+    <select id="roots" aria-label="Contract root">
+      <!-- These two are BASANOS's OWN detector corpus, not ecosystem contracts:
+           `sound` is the clean control (PASS is the expected result) and `fixtures`
+           is deliberately vulnerable (FAIL is the expected result). Unlabelled, the
+           red verdict on the demo corpus read as a broken scanner. -->
+      <option value="sound">self-test · clean corpus (expect PASS)</option>
+      <option value="fixtures">self-test · vulnerable corpus (expect FAIL)</option>
+      <option value="acex">acex</option>
+      <option value="lottery">lottery</option>
+      <option value="core">core</option>
+      <option value="zk">zk</option>
+    </select>
+    <label class="toggle"><input id="intel" type="checkbox" /> ingest intel (allowlist only)</label>
+    <button class="primary" id="run" type="button">Scan</button>
+    <button id="healthBtn" type="button">Health</button>
+  </div>
+
+  <div class="verdictbar" id="verdictbar" data-v="">
+    <span class="badge" id="verdict">IDLE</span>
+    <p class="verdictnote" id="verdictNote">No pack yet. A verdict exists only inside a signed pack
+      from one scan, pinned to one commit.</p>
+  </div>
+
+  <div class="meta" id="meta"></div>
+  <div class="playbook" id="playbook" hidden></div>
+  <div id="findings"></div>
+  <p class="limits" id="limits"></p>
+
+  <details>
+    <summary>Raw pack (JSON)</summary>
+    <pre id="out">idle — pick a root and scan. Memos steer detector order.</pre>
+  </details>
+</main>
+
+<script type="module">
+import { mountTouchstone } from "/stone.js";
+
+const touchstone = mountTouchstone(document.getElementById("stone"), {
+  compact: true,
+  freezeVerdict: true,
+  hud: {
+    verdict: document.getElementById("readoutVerdict"),
+    phase: document.getElementById("readoutPhase"),
+  },
+});
+
+const out = document.getElementById("out");
+const stage = document.getElementById("stage");
+const verdict = document.getElementById("verdict");
+const verdictBar = document.getElementById("verdictbar");
+const verdictNote = document.getElementById("verdictNote");
+const role = document.getElementById("role");
+const meta = document.getElementById("meta");
+const findingsEl = document.getElementById("findings");
+const limitsEl = document.getElementById("limits");
+const playbook = document.getElementById("playbook");
+const runBtn = document.getElementById("run");
+
+const NOTES = {
+  PASS: "The detectors scraped this tree and found nothing to raise. The pin is what makes that claim checkable.",
+  REVIEW: "Something needs a human. REVIEW is not a soft PASS — the pack ships the handling steps.",
+  FAIL: "Contain this digest. The playbook below is the ISO/IEC 29147 / 30111 next steps for the pack.",
+  ERROR: "The console could not complete the scan. That is the absence of a verdict, not a clean one.",
+};
+
+function colorFor(v) {
+  if (v === "PASS") return "var(--pass)";
+  if (v === "FAIL") return "var(--fail)";
+  if (v === "REVIEW") return "var(--rev)";
+  if (v === "ERROR") return "var(--fail)";
+  return "var(--muted)";
+}
+
+function showVerdict(v, note) {
+  verdict.textContent = v;
+  verdict.style.color = colorFor(v);
+  verdictBar.dataset.v = v;
+  verdictNote.textContent = note ?? NOTES[v] ?? "";
+  // The stone only ever shows one of its three verdicts; anything else leaves it as it was.
+  if (v === "PASS" || v === "FAIL" || v === "REVIEW") touchstone.setVerdict(v);
+}
+
+function chip(label, value) {
+  return `<div class="chip"><b>${label}</b><span>${value || "—"}</span></div>`;
+}
+
+function escapeHtml(value) {
+  return String(value ?? "").replace(/[&<>"']/g, (c) =>
+    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+}
+
+async function postInvoke(roots, ingest) {
+  const body = {
+    product_id: "basanos",
+    capability_id: "agent.security.contract-assurance@v1",
+    input: { roots, ingest_intel: ingest }
+  };
+  const res = await fetch("/invoke", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(body)
+  });
+  const data = await res.json();
+  return { res, pack: data.result || data };
+}
+
+runBtn.onclick = async () => {
+  const roots = [document.getElementById("roots").value];
+  const ingest = document.getElementById("intel").checked;
+  out.textContent = "scanning…";
+  findingsEl.innerHTML = "";
+  meta.innerHTML = "";
+  limitsEl.textContent = "";
+  playbook.hidden = true;
+  playbook.innerHTML = "";
+  stage.dataset.busy = "1";
+  runBtn.disabled = true;
+  showVerdict("SCANNING", `scraping ${roots[0]}…`);
+  try {
+    const { res, pack } = await postInvoke(roots, ingest);
+    showVerdict(pack.verdict || String(res.status));
+    const commit = (pack.commit && pack.commit.sha) || "";
+    const digest = (pack.commit && pack.commit.tree_digest) || "";
+    meta.innerHTML =
+      chip("files", pack.subject && pack.subject.file_count) +
+      chip("commit", commit ? commit.slice(0, 12) : "unpinned") +
+      chip("tree", digest ? digest.slice(0, 16) : "—") +
+      chip("pack", (pack.basanos_report_digest || "").slice(0, 16));
+    const handling = pack.handling || {};
+    const actions = handling.operator_actions || [];
+    if (actions.length) {
+      playbook.hidden = false;
+      playbook.innerHTML =
+        `<h2>Operator playbook · ISO/IEC 29147 / 30111</h2>` +
+        `<p>${escapeHtml(handling.summary || "")}</p>` +
+        `<ol>${actions.map((step) => `<li>${escapeHtml(step)}</li>`).join("")}</ol>`;
+    }
+    const findings = pack.findings || [];
+    if (findings.length) {
+      findingsEl.innerHTML =
+        `<div class="findings"><h2>${findings.length} finding${findings.length === 1 ? "" : "s"}</h2>` +
+        `<table><thead><tr><th>detector</th><th>severity</th><th>CWE</th><th>path</th><th>title</th></tr></thead><tbody>${
+          findings.map((f) => {
+            const sev = String(f.severity || "info").toLowerCase();
+            return `<tr><td class="mono">${escapeHtml(f.detector_id)}</td>` +
+              `<td><span class="sev ${escapeHtml(sev)}">${escapeHtml(sev)}</span></td>` +
+              `<td class="mono">${escapeHtml(f.cwe || f.swc || "—")}</td>` +
+              `<td class="mono">${escapeHtml(f.path)}:${escapeHtml(f.line || 0)}</td>` +
+              `<td>${escapeHtml(f.title)}</td></tr>`;
+          }).join("")
+        }</tbody></table></div>`;
+    }
+    const lim = pack.limits || {};
+    limitsEl.textContent = (lim.in_scope || []).slice(0, 2).join(" · ");
+    out.textContent = JSON.stringify(pack, null, 2);
+  } catch (err) {
+    showVerdict("ERROR");
+    out.textContent = String(err);
+  } finally {
+    stage.dataset.busy = "0";
+    runBtn.disabled = false;
+  }
+};
+
+document.getElementById("healthBtn").onclick = async () => {
+  try {
+    const health = await (await fetch("/health")).json();
+    const intel = await (await fetch("/intel")).json();
+    const memos = await (await fetch("/memos")).json();
+    role.dataset.live = health.ok ? "1" : "0";
+    document.getElementById("roleText").textContent = health.ok
+      ? `agent.security.contract-assurance@v1 · live`
+      : `agent.security.contract-assurance@v1 · down`;
+    playbook.hidden = true;
+    out.textContent = JSON.stringify({ health, intel, memos }, null, 2);
+    document.querySelector("details").open = true;
+  } catch (err) {
+    role.dataset.live = "0";
+    out.textContent = String(err);
+  }
+};
+</script>
+</body>
+</html>
