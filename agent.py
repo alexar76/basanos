@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hmac
+import ipaddress
 import json
 import mimetypes
 import os
@@ -38,13 +39,25 @@ CAPABILITY = load_capability()
 _invoke_hits: dict[str, list[float]] = {}
 
 
+def _from_local_proxy(peer: str) -> bool:
+    """Could the TCP peer be our own reverse proxy (this host or its docker network)? Only
+    then are X-Real-IP / X-Forwarded-For the caller's: anyone reaching the port another way
+    writes them itself and gets a fresh rate-limit bucket per request."""
+    try:
+        addr = ipaddress.ip_address((peer or "").split("%")[0])
+    except ValueError:
+        return False
+    return addr.is_loopback or addr.is_private or addr.is_link_local
+
+
 def _client_key(request: Request) -> str:
     """Behind the documented nginx edge, X-Real-Ip is the real caller; the raw peer is the
-    proxy, i.e. one shared bucket for the whole internet."""
-    real = (request.headers.get("x-real-ip") or "").strip()
+    proxy, i.e. one shared bucket for the whole internet. Taken only from that proxy."""
+    peer = (request.client.host if request.client else "") or ""
+    real = (request.headers.get("x-real-ip") or "").strip() if _from_local_proxy(peer) else ""
     if real:
         return real
-    return (request.client.host if request.client else "") or "unknown"
+    return peer or "unknown"
 
 
 def _rate_limited(key: str) -> bool:
