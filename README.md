@@ -1,10 +1,3 @@
-<!-- aicom-mirror-notice -->
-> **🔄 Synced from a monorepo — but with a live history.** `basanos` mirrors the
-> canonical AI-Factory monorepo. History here is append-only (no force-push).
-> **Pull requests are welcome** — merged PRs are imported back into the monorepo
-> and re-synced here, so your contribution becomes canonical.
-> 💬 **[Issues](https://github.com/alexar76/basanos/issues)** · **[Pull requests](https://github.com/alexar76/basanos/pulls)** both welcome.
-
 # BASANOS
 
 <!-- aicom-readme-badges -->
@@ -18,6 +11,9 @@
   <a href="https://github.com/alexar76/basanos/blob/main/LICENSE"><img src="https://raw.githubusercontent.com/alexar76/basanos/refs/heads/main/docs/badges/license.svg" alt="License: MIT" /></a>
 </p>
 <!-- /aicom-readme-badges -->
+
+<!-- aicom-mirror-notice -->
+> 🔄 Synced from the [AI-Factory monorepo](https://github.com/alexar76/aicom) (append-only history). **Pull requests are welcome** — merged PRs are imported back and re-synced here. [Issues](https://github.com/alexar76/basanos/issues) · [Pull requests](https://github.com/alexar76/basanos/pulls)
 
 <p align="center">
   <strong>BASANOS</strong> (βάσανος) — the Lydian <strong>touchstone</strong> for ecosystem Solidity<br>
