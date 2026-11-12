@@ -1,4 +1,4 @@
-# BASANOS
+# BASANOS — Solidity scanner and signed findings
 
 <!-- aicom-readme-badges -->
 <p align="center">
