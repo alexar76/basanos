@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>BASANOS — assurance console</title>
-<meta name="description" content="Lydian touchstone for ecosystem Solidity. Signed Assurance Pack at a pinned commit." />
+<title>Solidity security scanner — BASANOS console</title>
+<meta name="description" content="Run BASANOS on a bundled Solidity example or configured contract root. Get a signed Assurance Pack tied to a source commit." />
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
 <link href="fonts/fonts.css" rel="stylesheet" />
 <script type="importmap">
@@ -48,7 +48,7 @@
   /* A flex column so the boundary line settles against the bottom of the stage rather than
      leaving a hole in the middle of the panel. */
   header { display: flex; flex-direction: column; }
-  header h1 { font-family: var(--head); letter-spacing: .18em; font-size: 1.5rem;
+  header h1 { font-family: var(--head); letter-spacing: -.01em; font-size: 1.5rem;
     color: var(--gold); margin: 0 0 10px; }
   header p { color: var(--muted); margin: 0 0 14px; max-width: 38rem; }
   .role { display: inline-flex; align-items: center; gap: 8px; padding: 5px 11px;
@@ -154,9 +154,10 @@
 <main>
   <div class="hero">
     <header>
-      <h1>BASANOS</h1>
-      <p>Scratch the alloy. A signed <strong>Assurance Pack</strong> at a pinned commit —
-         PASS, REVIEW, or FAIL, with an operator playbook when the stone streaks red.</p>
+      <h1>Solidity security scanner</h1>
+      <p>BASANOS returns a signed <strong>Assurance Pack</strong> tied to a source commit.
+         Choose a bundled example or a configured contract root. To scan your own checkout,
+         configure a local BASANOS instance.</p>
       <span class="role" id="role" data-live=""><i></i> <span id="roleText">agent.security.contract-assurance@v1</span></span>
       <p class="not">Not insurance · not a red team · not Hub admission.
          Coverage stays a human call.</p>
