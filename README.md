@@ -72,7 +72,7 @@ flowchart LR
 | **Whole tree** (`basanos/xcontract.py`) | a contract graph: per-contract state, who may write each slot (following storage pointers and one level of internal calls), and which contract reads which other contract's state | one balance mutated under two different `onlyX` gates while a third contract lends against it; a value read as a price that any caller may define |
 
 The second layer exists because of a measurement worth repeating. A hand audit of this
-ecosystem's own **ACEX** contracts found two exploitable criticals — the same USDC pledged
+ecosystem's own **Agent Capital Exchange** contracts found two exploitable criticals — the same USDC pledged
 to a lending pool *and* to a bond series across two contracts, and a default whose
 beneficiary could trigger it. A full BASANOS scan of that exact tree returned **eight
 findings, all `pragma.floating`**, and the pack read **PASS**. Both bugs were correct in
